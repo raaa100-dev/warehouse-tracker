@@ -1,0 +1,1444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Warehouse"/>
+<meta name="theme-color" content="#ffffff"/>
+<title>Warehouse Parts Tracker</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/quagga/0.12.1/quagga.min.js"></script>
+<style>
+:root {
+  --bg:#fff;--bg2:#f5f5f7;--bg3:#ebebeb;
+  --text:#1d1d1f;--text2:#6e6e73;--text3:#aeaeb2;
+  --border:#d2d2d7;--border2:#e5e5ea;--accent:#1d1d1f;
+  --green-bg:#eaf3de;--green-text:#27500a;--green-border:#c0dd97;
+  --amber-bg:#faeeda;--amber-text:#633806;--amber-border:#fac775;
+  --red-bg:#fcebeb;--red-text:#a32d2d;--red-border:#f7c1c1;
+  --blue-bg:#e6f1fb;--blue-text:#185fa5;--blue-border:#b5d4f4;
+  --purple-bg:#f3edfb;--purple-text:#5b2d9e;--purple-border:#cdb8f0;
+  --radius:10px;--radius-sm:7px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1c1c1e;--bg2:#2c2c2e;--bg3:#3a3a3c;
+  --text:#f5f5f7;--text2:#aeaeb2;--text3:#6e6e73;
+  --border:#3a3a3c;--border2:#2c2c2e;
+  --green-bg:#1a2e0a;--green-text:#a8d87a;
+  --amber-bg:#2e1f0a;--amber-text:#f0b860;
+  --red-bg:#2e0a0a;--red-text:#f08080;
+  --blue-bg:#0a1e2e;--blue-text:#60a8f0;
+  --purple-bg:#1e0a2e;--purple-text:#c090f0;
+}}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;background:var(--bg);color:var(--text)}
+body{display:flex;flex-direction:column;overflow:hidden}
+
+.hdr{display:flex;align-items:center;gap:10px;padding:max(12px,env(safe-area-inset-top)) 16px 8px;border-bottom:.5px solid var(--border);background:var(--bg);flex-shrink:0}
+.hdr-text{flex:1}.hdr h1{font-size:17px;font-weight:600}.hdr p{font-size:11px;color:var(--text2);margin-top:1px}
+.user-pill{font-size:11px;font-weight:600;background:var(--blue-bg);color:var(--blue-text);border:.5px solid var(--blue-border);border-radius:99px;padding:4px 10px;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.role-badge{font-size:10px;font-weight:600;padding:2px 7px;border-radius:99px;margin-left:5px;display:inline-block}
+.role-admin{background:var(--purple-bg);color:var(--purple-text)}
+.role-stager{background:var(--amber-bg);color:var(--amber-text)}
+.role-signout{background:var(--green-bg);color:var(--green-text)}
+
+.nav{display:flex;border-bottom:.5px solid var(--border);background:var(--bg);flex-shrink:0;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.nav::-webkit-scrollbar{display:none}
+.nav button{flex:1;min-width:52px;padding:9px 3px 8px;font-size:11px;font-weight:500;background:none;border:none;border-bottom:2px solid transparent;color:var(--text2);cursor:pointer;white-space:nowrap;font-family:inherit}
+.nav button.active{color:var(--text);border-bottom-color:var(--text);font-weight:600}
+
+.screens{flex:1;overflow:hidden;position:relative}
+.sc{display:none;position:absolute;inset:0;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px 16px max(16px,env(safe-area-inset-bottom))}
+.sc.active{display:block}
+
+.fl{font-size:11px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:5px;margin-top:14px}
+.fl:first-child,.fl.no-top{margin-top:0}
+input[type=text],input[type=password],select,textarea{width:100%;padding:10px 12px;font-size:15px;border:.5px solid var(--border);border-radius:var(--radius-sm);background:var(--bg);color:var(--text);-webkit-appearance:none;font-family:inherit}
+input:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(0,0,0,.06)}
+textarea{resize:vertical;min-height:60px;font-size:13px}
+select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%236e6e73' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 12px center;padding-right:32px}
+
+.btn{width:100%;padding:11px;border-radius:var(--radius-sm);font-size:15px;font-weight:500;cursor:pointer;border:.5px solid var(--border);background:var(--bg);color:var(--text);transition:opacity .15s;font-family:inherit}
+.btn:active{opacity:.7}.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn-primary{background:var(--accent);color:var(--bg);border-color:var(--accent)}
+.btn-success{background:var(--green-bg);color:var(--green-text);border-color:var(--green-border)}
+.btn-danger{background:var(--red-bg);color:var(--red-text);border-color:var(--red-border)}
+.btn-warn{background:var(--amber-bg);color:var(--amber-text);border-color:var(--amber-border)}
+.btn-purple{background:var(--purple-bg);color:var(--purple-text);border-color:var(--purple-border)}
+.btn-sm{width:auto;padding:7px 12px;font-size:13px}
+.btn-row{display:flex;gap:8px}.btn-row .btn{flex:1}
+
+.card{background:var(--bg2);border-radius:var(--radius);border:.5px solid var(--border2);padding:12px 14px}
+.prow{display:flex;align-items:flex-start;gap:8px;padding:10px 0;border-bottom:.5px solid var(--border2)}
+.prow:last-child{border-bottom:none}
+.pi{flex:1;min-width:0}
+.pid{font-size:14px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pn{font-size:12px;color:var(--text2);margin-top:2px}
+.paudit{font-size:11px;color:var(--text3);margin-top:3px;line-height:1.5}
+
+.badge{display:inline-block;font-size:10px;font-weight:600;padding:2px 6px;border-radius:99px;margin-left:5px;vertical-align:middle}
+.b-staged{background:var(--amber-bg);color:var(--amber-text)}
+.b-picked{background:var(--green-bg);color:var(--green-text)}
+.b-partial{background:var(--blue-bg);color:var(--blue-text)}
+.b-over{background:var(--red-bg);color:var(--red-text)}
+.ps{font-size:11px;padding:3px 7px;border-radius:99px;flex-shrink:0;font-weight:500}
+.s-staged{background:var(--amber-bg);color:var(--amber-text)}
+.s-picked{background:var(--green-bg);color:var(--green-text)}
+.s-over{background:var(--red-bg);color:var(--red-text)}
+
+.ib{width:30px;height:30px;border-radius:var(--radius-sm);border:.5px solid var(--border);background:var(--bg2);cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;color:var(--text)}
+
+.bbanner{border-radius:var(--radius-sm);padding:10px 12px;margin-top:8px}
+.bb-ok{background:var(--green-bg);border:.5px solid var(--green-border)}
+.bb-ok .bn{font-size:15px;font-weight:600;color:var(--green-text)}
+.bb-ok .bm{font-size:12px;color:var(--green-text);margin-top:2px;opacity:.8}
+.bb-warn{background:var(--amber-bg);border:.5px solid var(--amber-border)}
+.bb-warn .bm{font-size:13px;color:var(--amber-text)}
+.bb-err{background:var(--red-bg);border:.5px solid var(--red-border)}
+.bb-err .bm{font-size:13px;color:var(--red-text)}
+.bb-job{background:var(--blue-bg);border:.5px solid var(--blue-border)}
+.bb-job .bn{font-size:16px;font-weight:600;color:var(--blue-text)}
+.bb-job .bm{font-size:12px;color:var(--blue-text);margin-top:2px}
+.over-flag{background:var(--red-bg);border:.5px solid var(--red-border);border-radius:var(--radius-sm);padding:10px 12px}
+.over-flag .ot{font-size:13px;font-weight:600;color:var(--red-text)}
+.over-flag .om{font-size:12px;color:var(--red-text);margin-top:4px;line-height:1.5;opacity:.85}
+
+.stat-row{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.stat{background:var(--bg2);border-radius:var(--radius-sm);padding:10px 12px}
+.stat .sv{font-size:22px;font-weight:600}.stat .sl{font-size:11px;color:var(--text2);margin-top:1px}
+
+.divider{height:.5px;background:var(--border2);margin:14px 0}
+.sec{font-size:13px;font-weight:600;color:var(--text2);margin:14px 0 6px}
+.empty{text-align:center;padding:2rem 1rem;color:var(--text3);font-size:14px}
+.backbtn{font-size:14px;color:var(--text2);background:none;border:none;cursor:pointer;padding:0 0 10px;font-family:inherit}
+
+.toast{position:fixed;bottom:max(24px,env(safe-area-inset-bottom));left:50%;transform:translateX(-50%);background:var(--text);color:var(--bg);padding:8px 18px;border-radius:99px;font-size:13px;font-weight:500;opacity:0;transition:opacity .2s;pointer-events:none;white-space:nowrap;z-index:9999}
+.toast.show{opacity:1}
+
+.mode-toggle{display:flex;border:.5px solid var(--border);border-radius:var(--radius-sm);overflow:hidden}
+.mode-toggle button{flex:1;padding:9px 6px;font-size:13px;font-weight:500;background:var(--bg2);border:none;cursor:pointer;color:var(--text2);font-family:inherit}
+.mode-toggle button.active{background:var(--accent);color:var(--bg)}
+.mode-toggle button:disabled{opacity:.35;cursor:not-allowed}
+
+.cart-box{background:var(--bg2);border-radius:var(--radius);border:.5px solid var(--border2);padding:12px}
+.cart-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cart-title{font-size:14px;font-weight:600}
+.cart-badge{background:var(--text);color:var(--bg);font-size:12px;font-weight:700;padding:2px 9px;border-radius:99px}
+.cart-item{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:.5px solid var(--border2)}
+.cart-item:last-child{border-bottom:none}
+.ci{flex:1;min-width:0}.cn{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.cb{font-size:11px;color:var(--text2)}
+.qty-ctrl{display:flex;align-items:center;gap:5px;flex-shrink:0}
+.qty-ctrl span{font-size:15px;font-weight:600;min-width:24px;text-align:center}
+.qty-ctrl button{width:26px;height:26px;border-radius:6px;border:.5px solid var(--border);background:var(--bg);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;line-height:1}
+
+.camera-wrap{position:relative;border-radius:var(--radius);overflow:hidden;background:#000;aspect-ratio:4/3;width:100%}
+#camera-preview{width:100%;height:100%;object-fit:cover;display:block}
+.camera-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;pointer-events:none}
+.scan-reticle{width:60%;max-width:220px;aspect-ratio:3/1;border:2px solid rgba(255,255,255,.8);border-radius:8px;box-shadow:0 0 0 2000px rgba(0,0,0,.35)}
+.scan-line{position:absolute;left:4px;right:4px;height:2px;background:rgba(255,59,48,.8);border-radius:2px;animation:scanAnim 2s ease-in-out infinite}
+@keyframes scanAnim{0%,100%{top:10%}50%{top:85%}}
+.camera-status{position:absolute;bottom:10px;left:0;right:0;text-align:center;font-size:12px;font-weight:500;color:rgba(255,255,255,.9);background:rgba(0,0,0,.4);padding:4px}
+.cam-detected{position:absolute;top:8px;left:0;right:0;text-align:center}
+.cam-detected span{background:rgba(52,199,89,.9);color:#fff;font-size:12px;font-weight:600;padding:4px 12px;border-radius:99px}
+
+/* SCAN CONFIRM MODAL */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:1000;display:flex;align-items:flex-end;justify-content:center;padding-bottom:max(24px,env(safe-area-inset-bottom))}
+.modal-sheet{background:var(--bg);border-radius:20px 20px 16px 16px;width:100%;max-width:420px;padding:20px 20px 12px;box-shadow:0 -4px 30px rgba(0,0,0,.2)}
+.sm-icon{font-size:40px;text-align:center;margin-bottom:8px}
+.sm-title{font-size:18px;font-weight:700;text-align:center;margin-bottom:6px}
+.sm-part{font-size:15px;font-weight:600;color:var(--green-text);background:var(--green-bg);border:.5px solid var(--green-border);border-radius:var(--radius-sm);padding:10px 14px;text-align:center;margin-bottom:6px}
+.sm-sub{font-size:13px;color:var(--text2);text-align:center;margin-bottom:16px}
+.sm-btns{display:flex;flex-direction:column;gap:8px}
+
+/* LOGIN */
+.login-wrap{min-height:100vh;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--bg)}
+.login-card{width:100%;max-width:360px}
+.login-logo{font-size:40px;text-align:center;margin-bottom:12px}
+.login-title{font-size:24px;font-weight:700;text-align:center;margin-bottom:4px}
+.login-sub{font-size:14px;color:var(--text2);text-align:center;margin-bottom:28px}
+.login-err{background:var(--red-bg);border:.5px solid var(--red-border);border-radius:var(--radius-sm);padding:10px 12px;font-size:13px;color:var(--red-text);margin-bottom:12px;display:none}
+
+/* ADMIN PANEL */
+.user-card{background:var(--bg2);border-radius:var(--radius);border:.5px solid var(--border2);padding:12px 14px;margin-bottom:8px}
+.user-card .uc-name{font-size:15px;font-weight:600}
+.user-card .uc-meta{font-size:12px;color:var(--text2);margin-top:3px}
+.user-card .uc-actions{display:flex;gap:7px;margin-top:10px}
+
+/* PERMISSION LOCK */
+.perm-lock{background:var(--red-bg);border:.5px solid var(--red-border);border-radius:var(--radius-sm);padding:14px;text-align:center;margin:20px 0}
+.perm-lock .pl-icon{font-size:28px;margin-bottom:6px}
+.perm-lock .pl-text{font-size:14px;font-weight:600;color:var(--red-text)}
+.perm-lock .pl-sub{font-size:12px;color:var(--red-text);margin-top:3px;opacity:.8}
+
+.summary-cards{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.sum-card{background:var(--bg2);border-radius:var(--radius);padding:14px;border:.5px solid var(--border2)}
+.sum-card .sv{font-size:28px;font-weight:700}.sum-card .sl{font-size:12px;color:var(--text2);margin-top:2px}
+.sum-card.green .sv{color:var(--green-text)}.sum-card.amber .sv{color:var(--amber-text)}
+.sum-card.red .sv{color:var(--red-text)}.sum-card.blue .sv{color:var(--blue-text)}
+
+.report-section{background:var(--bg2);border-radius:var(--radius);border:.5px solid var(--border2);margin-bottom:14px;overflow:hidden}
+.report-section-hdr{padding:12px 14px;border-bottom:.5px solid var(--border2);display:flex;align-items:center;justify-content:space-between}
+.report-section-hdr h3{font-size:14px;font-weight:600}
+.report-body{padding:0 14px}
+.report-row{display:flex;align-items:flex-start;gap:8px;padding:9px 0;border-bottom:.5px solid var(--border2)}
+.report-row:last-child{border-bottom:none}
+
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}
+
+/* MANIFEST CHECKLIST */
+.manifest-item{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:.5px solid var(--border2)}
+.manifest-item:last-child{border-bottom:none}
+.manifest-check{width:26px;height:26px;border-radius:50%;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:13px;margin-top:1px}
+.mcheck-done{background:var(--green-bg);border-color:var(--green-border);color:var(--green-text)}
+.mcheck-partial{background:var(--amber-bg);border-color:var(--amber-border);color:var(--amber-text)}
+.mcheck-missing{background:var(--bg2);border-color:var(--border);color:var(--text3)}
+.mcheck-over{background:var(--red-bg);border-color:var(--red-border);color:var(--red-text)}
+.mi-info{flex:1;min-width:0}
+.mi-name{font-size:14px;font-weight:500;color:var(--text)}
+.mi-sub{font-size:11px;color:var(--text2);margin-top:2px}
+.mi-audit{font-size:11px;color:var(--text3);margin-top:3px;line-height:1.5}
+.mi-status{font-size:11px;font-weight:600;padding:3px 8px;border-radius:99px;flex-shrink:0;margin-top:2px}
+.mis-staged{background:var(--amber-bg);color:var(--amber-text)}
+.mis-picked{background:var(--green-bg);color:var(--green-text)}
+.mis-missing{background:var(--bg3);color:var(--text3)}
+.mis-over{background:var(--red-bg);color:var(--red-text)}
+.manifest-progress{background:var(--bg3);border-radius:99px;height:6px;overflow:hidden;margin:8px 0}
+.manifest-progress-bar{height:100%;background:var(--green-text);border-radius:99px;transition:width .4s ease}
+.manifest-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:12px}
+.ms-stat{background:var(--bg2);border-radius:var(--radius-sm);padding:8px 6px;text-align:center}
+.ms-stat .msv{font-size:18px;font-weight:700}.ms-stat .msl{font-size:10px;color:var(--text2);margin-top:1px}
+.tab-row{display:flex;border-bottom:.5px solid var(--border2);margin-bottom:12px}
+.tab-btn{flex:1;padding:8px 4px;font-size:12px;font-weight:500;background:none;border:none;border-bottom:2px solid transparent;color:var(--text2);cursor:pointer;font-family:inherit}
+.tab-btn.active{color:var(--text);border-bottom-color:var(--accent);font-weight:600}
+</style>
+</head>
+<body>
+
+<!-- LOGIN (shown before auth) -->
+<div id="login-screen" style="display:none">
+  <div class="login-wrap">
+    <div class="login-card">
+      <div class="login-logo">🏭</div>
+      <div class="login-title">Warehouse Tracker</div>
+      <div class="login-sub">Sign in to continue</div>
+      <div class="login-err" id="login-err"></div>
+      <div class="fl no-top">Username</div>
+      <input type="text" id="l-user" placeholder="Username" autocomplete="username" style="margin-bottom:10px" onkeydown="if(event.key==='Enter')document.getElementById('l-pass').focus()"/>
+      <div class="fl">Password</div>
+      <input type="password" id="l-pass" placeholder="Password" autocomplete="current-password" style="margin-bottom:14px" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <button class="btn btn-primary" onclick="doLogin()" id="login-btn">Sign In</button>
+      <div style="font-size:12px;color:var(--text3);text-align:center;margin-top:14px" id="server-status"></div>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN APP (shown after auth) -->
+<div id="main-app" style="display:none;flex:1;flex-direction:column;overflow:hidden">
+
+<div class="hdr">
+  <div class="hdr-text">
+    <h1>Warehouse Tracker</h1>
+    <p id="hdr-sub">Loading…</p>
+  </div>
+  <div class="user-pill" id="user-pill" onclick="showUserMenu()">—</div>
+</div>
+
+<div class="nav" id="main-nav">
+  <button class="active" onclick="show('scan')">Scan</button>
+  <button onclick="show('jobscan')">Job</button>
+  <button onclick="show('catalog')">Catalog</button>
+  <button onclick="show('jobs')">Jobs</button>
+  <button onclick="show('report')">Reports</button>
+  <button onclick="show('log')" id="nav-log" style="display:none">Log</button>
+  <button onclick="show('admin')" id="nav-admin" style="display:none">Admin</button>
+</div>
+
+<div class="screens">
+
+  <!-- SCAN -->
+  <div id="sc-scan" class="sc active">
+    <div id="perm-stage-lock" class="perm-lock" style="display:none">
+      <div class="pl-icon">🔒</div>
+      <div class="pl-text">Staging not permitted</div>
+      <div class="pl-sub">Your account can sign out parts only</div>
+    </div>
+
+    <div class="fl no-top">Job ID</div>
+    <input type="text" id="s-job" placeholder="Enter or scan job ID" style="margin-bottom:10px"/>
+
+    <div class="mode-toggle" id="mode-toggle" style="margin-bottom:10px">
+      <button class="active" id="mode-stage" onclick="setMode('stage')">Stage in (batch)</button>
+      <button id="mode-out" onclick="setMode('out')">Sign out (batch)</button>
+    </div>
+
+    <!-- Camera -->
+    <div style="margin-bottom:10px">
+      <div class="camera-wrap" id="cam-wrap" style="display:none">
+        <div id="camera-preview"></div>
+        <div class="camera-overlay"><div class="scan-reticle"><div class="scan-line"></div></div></div>
+        <div class="camera-status" id="cam-status">Align barcode in frame</div>
+        <div class="cam-detected" id="cam-detected" style="display:none"><span id="cam-detected-text"></span></div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-sm" id="cam-toggle-btn" onclick="toggleCamera()" style="flex:1">📷 Scan with Camera</button>
+        <button class="btn btn-sm" id="cam-torch-btn" onclick="toggleTorch()" style="flex:1;display:none">🔦 Torch</button>
+      </div>
+    </div>
+
+    <div class="fl">Or type / hardware scanner</div>
+    <input type="text" id="s-part" placeholder="Barcode — press Enter to add to cart"
+      oninput="resolveP(this.value)"
+      onkeydown="if(event.key==='Enter'){addToCart();this.value='';clearResolve()}"/>
+    <div id="s-resolve" style="display:none;margin-top:6px"></div>
+
+    <div id="cart-box" style="display:none;margin-top:10px">
+      <div class="cart-box">
+        <div class="cart-hdr">
+          <div class="cart-title" id="cart-mode-label">Staging cart</div>
+          <span class="cart-badge" id="cart-count">0</span>
+        </div>
+        <div id="cart-items"></div>
+      </div>
+      <div class="btn-row mt8">
+        <button class="btn btn-primary" id="cart-commit-btn" onclick="commitCart()" style="flex:2">Stage all to job</button>
+        <button class="btn btn-danger btn-sm" onclick="clearCart()">Clear</button>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="sec">Recent activity</div>
+    <div id="s-recent"><div class="empty">No activity yet</div></div>
+  </div>
+
+  <!-- JOB SCAN -->
+  <div id="sc-jobscan" class="sc">
+    <div class="fl no-top">Scan or enter job ID</div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <button class="btn btn-sm" id="jscam-btn" onclick="toggleJobCamera()" style="flex:1">📷 Camera</button>
+    </div>
+    <input type="text" id="js-bc" placeholder="Job ID" style="margin-bottom:8px" oninput="resolveJob(this.value)"/>
+    <div id="js-banner" class="bbanner bb-job" style="display:none"><div class="bn" id="js-bn"></div><div class="bm" id="js-bm"></div></div>
+    <div id="js-nf" class="bbanner bb-warn" style="display:none"><div class="bm">No job found.</div></div>
+    <div id="js-content"></div>
+  </div>
+
+  <!-- CATALOG -->
+  <div id="sc-catalog" class="sc">
+    <div id="catalog-stager-lock" class="perm-lock" style="display:none">
+      <div class="pl-icon">🔒</div><div class="pl-text">Read-only access</div>
+      <div class="pl-sub">Only admins and stagers can edit the catalog</div>
+    </div>
+    <div id="catalog-edit-wrap">
+      <div class="fl no-top">Barcode</div><input type="text" id="c-bc" placeholder="Scan or type" style="margin-bottom:8px"/>
+      <div class="fl">Part number</div><input type="text" id="c-pn" placeholder="e.g. ELB-075-CU" style="margin-bottom:8px"/>
+      <div class="fl">Part name *</div><input type="text" id="c-nm" placeholder="e.g. 3/4 in copper elbow" style="margin-bottom:8px"/>
+      <div class="fl">Category</div><input type="text" id="c-cat" placeholder="e.g. fittings" style="margin-bottom:8px"/>
+      <div class="fl">Description</div><textarea id="c-desc" placeholder="Notes, specs…" style="margin-bottom:10px"></textarea>
+      <button class="btn btn-primary" onclick="saveCat()">Save to catalog</button>
+      <div class="divider"></div>
+      <div class="btn-row">
+        <button class="btn btn-sm" onclick="exportCatalogCSV()" style="flex:1">Export CSV</button>
+        <label class="btn btn-sm" style="flex:1;text-align:center;cursor:pointer">Import CSV
+          <input type="file" accept=".csv" style="display:none" onchange="importCSV(this)">
+        </label>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin:6px 0 10px">Columns: barcode, part_number, name, category, description</div>
+    </div>
+    <div class="fl">Search catalog</div>
+    <input type="text" id="c-search" placeholder="Name, barcode, part number…" style="margin-bottom:10px" oninput="renderCat()"/>
+    <div id="c-list"></div>
+  </div>
+
+  <!-- JOBS -->
+  <div id="sc-jobs" class="sc">
+    <div id="jl-view">
+      <div class="fl no-top">Create job</div>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <input type="text" id="new-job-id" placeholder="Job ID" style="flex:1;margin-bottom:0"/>
+        <button class="btn btn-sm btn-primary" onclick="createJob()">Create</button>
+      </div>
+      <input type="text" id="j-search" placeholder="Search jobs…" style="margin-bottom:10px" oninput="renderJobs()"/>
+      <div id="j-list"></div>
+    </div>
+    <div id="jd-view" style="display:none">
+      <!-- job detail rendered by JS -->
+    </div>
+  </div>
+
+  <!-- REPORTS -->
+  <div id="sc-report" class="sc">
+    <div class="fl no-top">Filter by job</div>
+    <input type="text" id="rpt-job" placeholder="Leave blank for all jobs" style="margin-bottom:10px" oninput="renderReport()"/>
+    <div class="btn-row" style="margin-bottom:8px">
+      <button class="btn btn-sm btn-success" onclick="exportReportCSV('staged')" style="flex:1">Staged CSV</button>
+      <button class="btn btn-sm btn-primary" onclick="exportReportCSV('signedout')" style="flex:1">Signed-out CSV</button>
+    </div>
+    <button class="btn btn-sm btn-warn" onclick="exportReportCSV('full')" style="margin-bottom:14px;width:100%">Full report CSV (Smartsheet-ready)</button>
+    <div id="report-body"></div>
+  </div>
+
+  <!-- AUDIT LOG (admin only) -->
+  <div id="sc-log" class="sc">
+    <div class="fl no-top">Filter</div>
+    <input type="text" id="log-filter" placeholder="Job, person, part…" style="margin-bottom:8px" oninput="renderLog()"/>
+    <button class="btn btn-sm" onclick="exportLogCSV()" style="margin-bottom:10px">Export log CSV</button>
+    <div id="log-list"><div class="empty">No activity</div></div>
+  </div>
+
+  <!-- ADMIN PANEL -->
+  <div id="sc-admin" class="sc">
+    <div id="admin-lock" class="perm-lock" style="display:none">
+      <div class="pl-icon">🔒</div><div class="pl-text">Admin access only</div>
+    </div>
+    <div id="admin-wrap">
+      <div style="font-size:20px;font-weight:700;margin-bottom:14px">User Management</div>
+
+      <!-- Create user -->
+      <div class="card" style="margin-bottom:14px">
+        <div style="font-size:14px;font-weight:600;margin-bottom:10px">Add New User</div>
+        <div class="fl no-top">Full name</div>
+        <input type="text" id="a-name" placeholder="e.g. Mike Rodriguez" style="margin-bottom:8px"/>
+        <div class="fl">Username</div>
+        <input type="text" id="a-user" placeholder="e.g. mike_r" style="margin-bottom:8px" autocomplete="off"/>
+        <div class="fl">Password</div>
+        <input type="password" id="a-pass" placeholder="Minimum 6 characters" style="margin-bottom:8px" autocomplete="new-password"/>
+        <div class="fl">Role</div>
+        <select id="a-role" style="margin-bottom:10px">
+          <option value="stager">Stager — can stage AND sign out parts</option>
+          <option value="signout">Sign-out only — can ONLY sign out assigned parts</option>
+          <option value="admin">Admin — full access + user management</option>
+        </select>
+        <div style="font-size:12px;color:var(--text2);margin-bottom:10px;line-height:1.5">
+          <strong>Stager:</strong> stage parts onto jobs, sign out parts, manage catalog<br>
+          <strong>Sign-out only:</strong> can only sign out parts already staged on a job<br>
+          <strong>Admin:</strong> everything + create/edit users
+        </div>
+        <button class="btn btn-primary" onclick="createUser()">Add User</button>
+      </div>
+
+      <div class="sec" style="margin-top:0">All Users</div>
+      <div id="users-list"></div>
+    </div>
+  </div>
+
+  <!-- STOCK -->
+  <div id="sc-inv" class="sc" style="display:none"></div>
+
+</div><!-- screens -->
+</div><!-- main-app -->
+
+<!-- SCAN CONFIRM MODAL -->
+<div class="modal-overlay" id="scan-modal" style="display:none">
+  <div class="modal-sheet">
+    <div class="sm-icon">✅</div>
+    <div class="sm-title">Part Scanned!</div>
+    <div class="sm-part" id="sm-part-name">—</div>
+    <div class="sm-sub" id="sm-sub-text">Added to cart</div>
+    <div class="sm-btns">
+      <button class="btn btn-primary" onclick="scanAnother()" style="font-size:16px">📷 Scan Another Item</button>
+      <button class="btn btn-success" onclick="scanDone()" style="font-size:16px">✓ Done Scanning</button>
+    </div>
+  </div>
+</div>
+
+<!-- EDIT USER MODAL -->
+<div class="modal-overlay" id="edit-user-modal" style="display:none">
+  <div class="modal-sheet">
+    <div class="sm-title" style="margin-bottom:14px">Edit User</div>
+    <input type="hidden" id="eu-id"/>
+    <div class="fl no-top">Full name</div>
+    <input type="text" id="eu-name" style="margin-bottom:8px"/>
+    <div class="fl">Role</div>
+    <select id="eu-role" style="margin-bottom:8px">
+      <option value="stager">Stager</option>
+      <option value="signout">Sign-out only</option>
+      <option value="admin">Admin</option>
+    </select>
+    <div class="fl">New password (leave blank to keep)</div>
+    <input type="password" id="eu-pass" placeholder="Leave blank to keep current" style="margin-bottom:8px" autocomplete="new-password"/>
+    <div class="fl">Status</div>
+    <select id="eu-active" style="margin-bottom:14px">
+      <option value="1">Active</option>
+      <option value="0">Disabled</option>
+    </select>
+    <div class="btn-row">
+      <button class="btn btn-primary" onclick="saveEditUser()" style="flex:2">Save Changes</button>
+      <button class="btn" onclick="closeEditUser()">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+// ─── CONFIG ──────────────────────────────────────────────────────────────
+// Auto-detect server URL. In production, change this to your server IP:
+// e.g. const API = 'http://192.168.1.50:3000/api';
+const API = window.location.origin + '/api';
+
+// ─── STATE ───────────────────────────────────────────────────────────────
+let token = localStorage.getItem('wh_token');
+let currentUser = null;
+let catalog = {};
+let jobs = {};
+let recentActivity = JSON.parse(localStorage.getItem('wh_recent') || '[]');
+let cart = { mode: 'stage', items: {} };
+let jsCart = {};
+let cameraActive = false;
+let jsCameraActive = false;
+let torchOn = false;
+let torchTrack = null;
+let scanCooldown = false;
+let logData = [];
+
+// ─── API HELPERS ─────────────────────────────────────────────────────────
+async function api(method, path, body) {
+  const opts = { method, headers: { 'Content-Type': 'application/json' } };
+  if (token) opts.headers['Authorization'] = 'Bearer ' + token;
+  if (body) opts.body = JSON.stringify(body);
+  try {
+    const r = await fetch(API + path, opts);
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || 'Server error');
+    return data;
+  } catch(e) {
+    if (e.message === 'Failed to fetch') throw new Error('Cannot reach server. Make sure the server is running.');
+    throw e;
+  }
+}
+
+// ─── TOAST ───────────────────────────────────────────────────────────────
+function toast(m, d=2500) {
+  const t = document.getElementById('toast');
+  t.textContent = m; t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), d);
+}
+
+// ─── LOGIN ────────────────────────────────────────────────────────────────
+async function init() {
+  // Check server first
+  document.getElementById('server-status').textContent = 'Connecting to server…';
+  if (token) {
+    try {
+      currentUser = await api('GET', '/me');
+      startApp();
+      return;
+    } catch(e) { token = null; localStorage.removeItem('wh_token'); }
+  }
+  document.getElementById('login-screen').style.display = 'block';
+  document.getElementById('server-status').textContent = '';
+}
+
+async function doLogin() {
+  const username = document.getElementById('l-user').value.trim();
+  const password = document.getElementById('l-pass').value;
+  const btn = document.getElementById('login-btn');
+  const err = document.getElementById('login-err');
+  if (!username || !password) { showErr(err, 'Enter username and password'); return; }
+  btn.disabled = true; btn.textContent = 'Signing in…'; err.style.display = 'none';
+  try {
+    const data = await api('POST', '/login', { username, password });
+    token = data.token;
+    currentUser = data.user;
+    localStorage.setItem('wh_token', token);
+    document.getElementById('login-screen').style.display = 'none';
+    startApp();
+  } catch(e) {
+    showErr(err, e.message);
+    btn.disabled = false; btn.textContent = 'Sign In';
+  }
+}
+
+function showErr(el, msg) { el.textContent = msg; el.style.display = 'block'; }
+
+function startApp() {
+  const app = document.getElementById('main-app');
+  app.style.display = 'flex';
+  document.getElementById('user-pill').textContent = currentUser.name;
+  document.getElementById('hdr-sub').textContent = getRoleLabel(currentUser.role);
+
+  // Show/hide nav items by role
+  if (currentUser.role === 'admin') {
+    document.getElementById('nav-log').style.display = '';
+    document.getElementById('nav-admin').style.display = '';
+  }
+
+  // Apply permission locks
+  if (currentUser.role === 'signout') {
+    document.getElementById('perm-stage-lock').style.display = 'block';
+    document.getElementById('mode-stage').disabled = true;
+    setMode('out'); // force sign-out mode
+  }
+
+  loadCatalog();
+  loadJobs();
+  show('scan');
+}
+
+function getRoleLabel(role) {
+  return { admin: '👑 Administrator', stager: '📦 Stager', signout: '✅ Sign-out' }[role] || role;
+}
+
+function showUserMenu() {
+  if (confirm('Sign out of Warehouse Tracker?')) {
+    token = null; currentUser = null;
+    localStorage.removeItem('wh_token');
+    location.reload();
+  }
+}
+
+// ─── NAV ─────────────────────────────────────────────────────────────────
+function show(n) {
+  stopCamera(); stopJobCamera();
+  document.querySelectorAll('.sc').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav button').forEach((b,i) => {
+    b.classList.toggle('active', ['scan','jobscan','catalog','jobs','report','log','admin'][i] === n);
+  });
+  const el = document.getElementById('sc-' + n);
+  if (el) el.classList.add('active');
+  if (n === 'jobs') renderJobs();
+  if (n === 'catalog') renderCat();
+  if (n === 'report') renderReport();
+  if (n === 'log') loadLog();
+  if (n === 'admin') loadUsers();
+}
+
+// ─── DATA LOADERS ────────────────────────────────────────────────────────
+async function loadCatalog() {
+  try {
+    const data = await api('GET', '/catalog');
+    catalog = {};
+    data.forEach(c => catalog[c.barcode] = c);
+  } catch(e) {}
+}
+async function loadJobs() {
+  try {
+    const data = await api('GET', '/jobs');
+    jobs = {};
+    data.forEach(j => jobs[j.id] = j);
+    renderJobs();
+  } catch(e) {}
+}
+function lookup(bc) { return catalog[bc ? bc.trim() : ''] || null; }
+
+// ─── RESOLVE PART ─────────────────────────────────────────────────────────
+function resolveP(val) {
+  const el = document.getElementById('s-resolve');
+  const v = (val || '').trim();
+  if (!v) { el.style.display = 'none'; return; }
+  const p = lookup(v);
+  el.style.display = 'block';
+  if (p) {
+    el.innerHTML = `<div class="bbanner bb-ok"><div class="bn">${p.name}${p.part_number?' · '+p.part_number:''}</div><div class="bm">${[p.category,p.description].filter(Boolean).join(' · ')||v}</div></div>`;
+  } else {
+    el.innerHTML = `<div class="bbanner bb-warn"><div class="bm">Unknown barcode — will be added with barcode as name. Add to catalog first for full details.</div></div>`;
+  }
+}
+function clearResolve() { document.getElementById('s-resolve').style.display = 'none'; }
+
+// ─── BEEP ────────────────────────────────────────────────────────────────
+function playBeep() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    [[880, 0], [1100, 0.1]].forEach(([freq, delay]) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.type = 'sine'; osc.frequency.value = freq;
+      const t = ctx.currentTime + delay;
+      gain.gain.setValueAtTime(0.4, t);
+      gain.gain.exponentialRampToValueAtTime(0.001, t + 0.15);
+      osc.start(t); osc.stop(t + 0.15);
+    });
+    setTimeout(() => ctx.close(), 600);
+  } catch(e) {}
+}
+
+// ─── CAMERA ───────────────────────────────────────────────────────────────
+function toggleCamera() { cameraActive ? stopCamera() : startCamera(); }
+function startCamera() {
+  document.getElementById('cam-wrap').style.display = 'block';
+  document.getElementById('cam-toggle-btn').textContent = '⏹ Stop Camera';
+  document.getElementById('cam-status').textContent = 'Starting…';
+  Quagga.init({
+    inputStream: { type:'LiveStream', target:document.getElementById('camera-preview'), constraints:{facingMode:'environment',aspectRatio:{min:1,max:2}} },
+    decoder: { readers:['code_128_reader','ean_reader','ean_8_reader','code_39_reader','upc_reader','upc_e_reader','codabar_reader','i2of5_reader'] },
+    locate:true, numOfWorkers:2, frequency:10
+  }, err => {
+    if (err) { toast('Camera unavailable'); stopCamera(); return; }
+    Quagga.start(); cameraActive = true;
+    document.getElementById('cam-status').textContent = 'Align barcode in frame';
+    const track = Quagga.CameraAccess.getActiveTrack();
+    if (track?.getCapabilities?.().torch) { torchTrack = track; document.getElementById('cam-torch-btn').style.display = 'block'; }
+  });
+  Quagga.offDetected();
+  Quagga.onDetected(result => {
+    const code = result.codeResult.code;
+    if (!code || scanCooldown) return;
+    scanCooldown = true;
+    try { Quagga.stop(); } catch(e){} cameraActive = false;
+    playBeep();
+    if (navigator.vibrate) navigator.vibrate([60,40,60]);
+    const det = document.getElementById('cam-detected');
+    document.getElementById('cam-detected-text').textContent = '✓ ' + code;
+    det.style.display = 'block'; setTimeout(() => det.style.display = 'none', 800);
+    document.getElementById('s-part').value = code;
+    addToCartCode(code);
+    document.getElementById('s-part').value = ''; clearResolve();
+    showScanModal(code);
+    scanCooldown = false;
+  });
+}
+function stopCamera() {
+  if (!cameraActive) return;
+  try { Quagga.stop(); } catch(e){}
+  cameraActive = false; torchTrack = null; torchOn = false;
+  document.getElementById('cam-wrap').style.display = 'none';
+  document.getElementById('cam-toggle-btn').textContent = '📷 Scan with Camera';
+  document.getElementById('cam-torch-btn').style.display = 'none';
+}
+function toggleTorch() {
+  if (!torchTrack) return;
+  torchOn = !torchOn;
+  torchTrack.applyConstraints({ advanced:[{torch:torchOn}] });
+  document.getElementById('cam-torch-btn').textContent = torchOn ? '🔦 ON' : '🔦 Torch';
+}
+function toggleJobCamera() { jsCameraActive ? stopJobCamera() : startJobCamera(); }
+function startJobCamera() {
+  document.getElementById('jscam-btn').textContent = '⏹ Stop';
+  let wrap = document.getElementById('js-cam-wrap');
+  if (!wrap) {
+    wrap = document.createElement('div');
+    wrap.id = 'js-cam-wrap'; wrap.className = 'camera-wrap'; wrap.style.marginBottom = '8px';
+    wrap.innerHTML = '<div id="js-cam-preview"></div><div class="camera-overlay"><div class="scan-reticle"><div class="scan-line"></div></div></div><div class="camera-status">Align job barcode</div>';
+    document.getElementById('jscam-btn').parentElement.insertAdjacentElement('afterend', wrap);
+  }
+  wrap.style.display = 'block';
+  Quagga.init({
+    inputStream:{type:'LiveStream',target:document.getElementById('js-cam-preview'),constraints:{facingMode:'environment'}},
+    decoder:{readers:['code_128_reader','ean_reader','code_39_reader','upc_reader']},
+    locate:true,numOfWorkers:2,frequency:10
+  }, err => { if(err){toast('Camera error');stopJobCamera();return;} Quagga.start(); jsCameraActive=true; });
+  Quagga.offDetected();
+  Quagga.onDetected(result => {
+    const code = result.codeResult.code;
+    if (!code || scanCooldown) return;
+    scanCooldown = true; setTimeout(()=>scanCooldown=false,1500);
+    if (navigator.vibrate) navigator.vibrate(50);
+    document.getElementById('js-bc').value = code;
+    resolveJob(code); stopJobCamera();
+  });
+}
+function stopJobCamera() {
+  if (!jsCameraActive) return;
+  try { Quagga.stop(); } catch(e){} jsCameraActive = false;
+  const w = document.getElementById('js-cam-wrap'); if(w) w.style.display='none';
+  document.getElementById('jscam-btn').textContent = '📷 Camera';
+}
+
+// ─── SCAN MODAL ───────────────────────────────────────────────────────────
+function showScanModal(code) {
+  const item = cart.items[code];
+  const nm = item?.name || lookup(code)?.name || code;
+  const total = Object.values(cart.items).reduce((a,i)=>a+i.qty,0);
+  document.getElementById('sm-part-name').textContent = nm + (item?.qty > 1 ? ' × ' + item.qty : '');
+  document.getElementById('sm-sub-text').innerHTML = 'Added to cart &nbsp;·&nbsp; <strong>' + total + '</strong> item' + (total!==1?'s':'') + ' total';
+  document.getElementById('scan-modal').style.display = 'flex';
+}
+function scanAnother() { document.getElementById('scan-modal').style.display = 'none'; startCamera(); }
+function scanDone() {
+  document.getElementById('scan-modal').style.display = 'none';
+  stopCamera();
+  document.getElementById('cart-box').scrollIntoView({ behavior:'smooth', block:'center' });
+}
+
+// ─── CART ─────────────────────────────────────────────────────────────────
+function setMode(m) {
+  if (currentUser?.role === 'signout' && m === 'stage') { toast('Staging not permitted for your account'); return; }
+  cart.mode = m; cart.items = {};
+  document.getElementById('mode-stage').classList.toggle('active', m==='stage');
+  document.getElementById('mode-out').classList.toggle('active', m==='out');
+  document.getElementById('cart-mode-label').textContent = m==='stage' ? 'Staging cart' : 'Sign-out cart';
+  document.getElementById('cart-commit-btn').textContent = m==='stage' ? 'Stage all to job' : 'Sign out all from job';
+  renderCart();
+}
+function addToCart() {
+  const code = document.getElementById('s-part').value.trim();
+  if (!code) return;
+  addToCartCode(code);
+}
+function addToCartCode(code) {
+  const cat = lookup(code);
+  const nm = cat ? cat.name : code;
+  if (cart.items[code]) { cart.items[code].qty++; }
+  else { cart.items[code] = { id:code, name:nm, qty:1 }; }
+  renderCart();
+}
+function cartAdj(id, d) { if(!cart.items[id])return; cart.items[id].qty=Math.max(1,cart.items[id].qty+d); renderCart(); }
+function cartRemove(id) { delete cart.items[id]; renderCart(); }
+function clearCart() { cart.items = {}; renderCart(); }
+function renderCart() {
+  const items = Object.values(cart.items);
+  const box = document.getElementById('cart-box');
+  document.getElementById('cart-count').textContent = items.reduce((a,i)=>a+i.qty,0);
+  if (!items.length) { box.style.display='none'; return; }
+  box.style.display = 'block';
+  document.getElementById('cart-items').innerHTML = items.map(i=>`
+    <div class="cart-item">
+      <div class="ci"><div class="cn">${i.name!==i.id?i.name:i.id}</div><div class="cb">${i.id}</div></div>
+      <div class="qty-ctrl">
+        <button onclick="cartAdj('${i.id}',-1)">−</button>
+        <span>${i.qty}</span>
+        <button onclick="cartAdj('${i.id}',1)">+</button>
+      </div>
+      <button class="ib" style="color:var(--red-text);font-size:16px" onclick="cartRemove('${i.id}')">×</button>
+    </div>`).join('');
+}
+
+async function commitCart() {
+  const jobId = document.getElementById('s-job').value.trim();
+  if (!jobId) { toast('Enter a job ID first'); return; }
+  const items = Object.values(cart.items);
+  if (!items.length) { toast('Cart is empty'); return; }
+
+  // Enforce: job must exist
+  if (!jobs[jobId]) { toast('Job ' + jobId + ' not found. Create it in the Jobs tab first.'); return; }
+
+  let ok=0, errs=[];
+  for (const item of items) {
+    try {
+      if (cart.mode === 'stage') {
+        // Check permission
+        if (currentUser.role === 'signout') { toast('Staging not permitted'); return; }
+        await api('POST', '/jobs/'+jobId+'/parts', { partId:item.id, name:item.name, assignedQty:item.qty });
+        ok++;
+      } else {
+        await api('POST', '/jobs/'+jobId+'/parts/'+item.id+'/signout', { qty:item.qty });
+        ok++;
+      }
+    } catch(e) { errs.push(item.name + ': ' + e.message); }
+  }
+
+  await loadJobs();
+  addLocalRecent(cart.mode, jobId, items);
+  renderRecent();
+  cart.items = {}; renderCart();
+
+  if (errs.length) toast(ok+' done · '+errs.length+' failed: '+errs[0], 4000);
+  else toast((cart.mode==='stage'?'Staged ':'Signed out ')+ok+' part type'+(ok!==1?'s':'')+' on job '+jobId);
+}
+
+function addLocalRecent(type, jobId, items) {
+  recentActivity.unshift({ type, jobId, items:[...items], user:currentUser.name, time:new Date().toLocaleTimeString(), isBatch:true });
+  if (recentActivity.length > 30) recentActivity = recentActivity.slice(0,30);
+  localStorage.setItem('wh_recent', JSON.stringify(recentActivity));
+}
+function renderRecent() {
+  const el = document.getElementById('s-recent');
+  if (!recentActivity.length) { el.innerHTML='<div class="empty">No activity yet</div>'; return; }
+  el.innerHTML = recentActivity.map(r => {
+    const total = r.items.reduce((a,i)=>a+i.qty,0);
+    const names = r.items.map(i=>i.name!==i.id?i.name:i.id).slice(0,3).join(', ')+(r.items.length>3?' +more':'');
+    return `<div class="prow"><div class="pi">
+      <div class="pid">${r.type==='stage'?'Staged':'Signed out'}: ${r.items.length} type${r.items.length!==1?'s':''}, ${total} total<span class="badge ${r.type==='stage'?'b-staged':'b-picked'}">${r.type==='stage'?'staged':'picked'}</span></div>
+      <div class="pn">Job ${r.jobId} · ${names}</div>
+      <div class="paudit">${r.user} · ${r.time}</div>
+    </div></div>`;
+  }).join('');
+}
+
+// ─── JOB SCAN ─────────────────────────────────────────────────────────────
+async function resolveJob(val) {
+  const v = (val||'').trim();
+  const jb=document.getElementById('js-banner'), jnf=document.getElementById('js-nf'), jc=document.getElementById('js-content');
+  if (!v) { jb.style.display='none'; jnf.style.display='none'; jc.innerHTML=''; return; }
+  try {
+    const job = await api('GET', '/jobs/'+v);
+    jobs[job.id] = job;
+    jnf.style.display='none';
+    const parts=Object.values(job.parts);
+    const staged=parts.filter(p=>p.status==='staged').length, picked=parts.filter(p=>p.status==='picked').length, over=parts.filter(p=>p.over).length;
+    document.getElementById('js-bn').textContent='Job '+job.id;
+    document.getElementById('js-bm').textContent=parts.length+' parts · '+staged+' staged · '+picked+' picked'+(over?' · '+over+' overage':'');
+    jb.style.display='block';
+    renderJobScanContent(job, jc);
+  } catch(e) {
+    jb.style.display='none'; jnf.style.display='block'; jc.innerHTML='';
+  }
+}
+
+function renderJobScanContent(job, container) {
+  const parts = Object.values(job.parts);
+  const over = parts.filter(p=>p.over);
+  let html = '';
+  if (over.length) html += `<div class="over-flag mt8"><div class="ot">⚠ Overage — ${over.length} item${over.length>1?'s':''}</div><div class="om">${over.map(p=>p.name+': assigned '+p.assignedQty+', taken '+p.takenQty+' by '+(p.signedOutBy||'—')).join('<br>')}</div></div>`;
+
+  // Manifest checklist (async load)
+  html += `<div id="js-manifest-section" style="margin-top:8px"></div>`;
+
+  if (!parts.length) {
+    html += '<div class="empty">No parts staged yet</div>';
+  } else {
+    html += '<div style="margin-top:8px">' + parts.map(p=>`<div class="prow">
+      <div class="pi">
+        <div class="pid">${p.name!==p.id?p.name:p.id}${p.over?'<span class="badge b-over">over</span>':''}</div>
+        <div class="pn">${p.id} · qty: ${p.assignedQty}</div>
+        <div class="paudit">Staged by <strong>${p.stagedBy||'—'}</strong> · ${p.stagedAt||'—'}${p.status==='picked'?`<br>Signed out by <strong>${p.signedOutBy||'—'}</strong> · ${p.signedOutAt||'—'}`:''}${p.over?`<br><span style="color:var(--red-text)">Taken ${p.takenQty} (over by ${p.takenQty-p.assignedQty})</span>`:''}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+        <span class="ps ${p.status==='picked'?'s-picked':p.over?'s-over':'s-staged'}">${p.status}</span>
+        ${p.status==='staged'?`<button class="ib" onclick="jsSingleSignOut('${job.id}','${p.id}')">✓</button>`:''}
+      </div></div>`).join('') + '</div>';
+  }
+
+  html += `<div class="divider"></div>
+    <div class="sec" style="margin-top:0">Batch sign-out</div>
+    <div id="js-cart-items"></div>
+    <div style="display:flex;gap:8px;margin-bottom:8px">
+      <input type="text" id="js-sp" placeholder="Scan or type barcode" style="flex:1;margin-bottom:0" onkeydown="if(event.key==='Enter'){addToJsCart('${job.id}');this.value=''}"/>
+      <input type="text" id="js-sq" placeholder="Qty" style="width:56px;margin-bottom:0"/>
+    </div>
+    <button class="btn btn-success" onclick="commitJsCart('${job.id}')">Sign out scanned parts</button>`;
+  container.innerHTML = html;
+  renderJsCart(job.id);
+
+  // Load manifest checklist asynchronously
+  loadJsManifest(job.id);
+}
+
+async function loadJsManifest(jobId) {
+  const el = document.getElementById('js-manifest-section');
+  if (!el) return;
+  try {
+    const manifest = await api('GET', '/jobs/'+jobId+'/manifest');
+    if (!manifest.length) { el.innerHTML=''; return; }
+
+    const done = manifest.filter(m=>m.stagedStatus==='picked').length;
+    const staged = manifest.filter(m=>m.stagedStatus==='staged').length;
+    const missing = manifest.filter(m=>m.stagedStatus==='not_staged').length;
+    const total = manifest.length;
+    const pct = total ? Math.round((done+staged)/total*100) : 0;
+
+    let html = `
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px">📋 Expected parts checklist</div>
+      <div class="manifest-summary">
+        <div class="ms-stat"><div class="msv">${total}</div><div class="msl">expected</div></div>
+        <div class="ms-stat"><div class="msv" style="color:var(--amber-text)">${staged}</div><div class="msl">staged</div></div>
+        <div class="ms-stat"><div class="msv" style="color:var(--green-text)">${done}</div><div class="msl">done</div></div>
+        <div class="ms-stat"><div class="msv" style="color:${missing?'var(--red-text)':'var(--text3)'}">${missing}</div><div class="msl">missing</div></div>
+      </div>
+      <div class="manifest-progress"><div class="manifest-progress-bar" style="width:${pct}%"></div></div>
+      <div style="font-size:11px;color:var(--text2);text-align:right;margin-bottom:10px">${pct}% complete</div>`;
+
+    html += manifest.map(m => {
+      let checkClass, checkIcon, statusClass, statusLabel;
+      if (m.over) { checkClass='mcheck-over'; checkIcon='!'; statusClass='mis-over'; statusLabel='OVER'; }
+      else if (m.stagedStatus==='picked') { checkClass='mcheck-done'; checkIcon='✓'; statusClass='mis-picked'; statusLabel='picked up'; }
+      else if (m.stagedStatus==='staged') { checkClass='mcheck-partial'; checkIcon='↑'; statusClass='mis-staged'; statusLabel='staged'; }
+      else { checkClass='mcheck-missing'; checkIcon='○'; statusClass='mis-missing'; statusLabel='not staged'; }
+      return `<div class="manifest-item">
+        <div class="manifest-check ${checkClass}">${checkIcon}</div>
+        <div class="mi-info">
+          <div class="mi-name">${m.name}</div>
+          <div class="mi-sub">${m.partId}${m.expectedQty>1?' · qty: '+m.expectedQty:''}</div>
+        </div>
+        <span class="mi-status ${statusClass}">${statusLabel}</span>
+      </div>`;
+    }).join('');
+
+    html += '<div class="divider"></div>';
+    el.innerHTML = html;
+  } catch(e) { el.innerHTML = ''; }
+}
+
+async function jsSingleSignOut(jobId, partId) {
+  try {
+    await api('POST', '/jobs/'+jobId+'/parts/'+partId+'/signout', { qty:1 });
+    toast('Signed out');
+    resolveJob(jobId);
+    loadJobs();
+  } catch(e) { toast('Error: '+e.message, 3500); }
+}
+
+function addToJsCart(jobId) {
+  const partId = document.getElementById('js-sp')?.value.trim();
+  const qty = parseInt(document.getElementById('js-sq')?.value.trim())||1;
+  if (!partId) return;
+  const nm = lookup(partId)?.name || partId;
+  if (jsCart[partId]) jsCart[partId].qty += qty; else jsCart[partId] = {id:partId,name:nm,qty};
+  if (document.getElementById('js-sq')) document.getElementById('js-sq').value='';
+  renderJsCart(jobId); toast('Cart: '+nm+' ×'+jsCart[partId].qty);
+}
+function renderJsCart(jobId) {
+  const el = document.getElementById('js-cart-items'); if (!el) return;
+  const items = Object.values(jsCart);
+  if (!items.length) { el.innerHTML=''; return; }
+  el.innerHTML = `<div class="cart-box" style="margin-bottom:8px">
+    <div class="cart-hdr"><div class="cart-title">Sign-out cart</div><span class="cart-badge">${items.reduce((a,i)=>a+i.qty,0)}</span></div>
+    ${items.map(i=>`<div class="cart-item"><div class="ci"><div class="cn">${i.name!==i.id?i.name:i.id}</div><div class="cb">${i.id} · qty ${i.qty}</div></div>
+      <button class="ib" style="color:var(--red-text);font-size:16px" onclick="delete jsCart['${i.id}'];renderJsCart('${jobId}')">×</button></div>`).join('')}
+  </div>`;
+}
+async function commitJsCart(jobId) {
+  const items = Object.values(jsCart); if (!items.length) { toast('Scan some parts first'); return; }
+  let ok=0, errs=[];
+  for (const item of items) {
+    try { await api('POST', '/jobs/'+jobId+'/parts/'+item.id+'/signout', {qty:item.qty}); ok++; }
+    catch(e) { errs.push(item.name+': '+e.message); }
+  }
+  jsCart = {}; await resolveJob(jobId); loadJobs();
+  if (errs.length) toast(ok+' signed out · Errors: '+errs[0], 4000);
+  else toast('Signed out '+ok+' part type'+(ok!==1?'s':''));
+}
+
+// ─── CATALOG ──────────────────────────────────────────────────────────────
+async function saveCat() {
+  const bc=document.getElementById('c-bc').value.trim(), nm=document.getElementById('c-nm').value.trim();
+  if (!bc||!nm) { toast('Barcode and name required'); return; }
+  try {
+    await api('POST', '/catalog', { barcode:bc, name:nm, part_number:document.getElementById('c-pn').value.trim(), category:document.getElementById('c-cat').value.trim(), description:document.getElementById('c-desc').value.trim() });
+    ['c-bc','c-pn','c-nm','c-cat','c-desc'].forEach(id=>document.getElementById(id).value='');
+    await loadCatalog(); renderCat(); toast('Saved: '+nm);
+  } catch(e) { toast('Error: '+e.message); }
+}
+function renderCat() {
+  const q=(document.getElementById('c-search')?.value||'').toLowerCase();
+  const items=Object.values(catalog).filter(c=>(c.name+c.barcode+(c.part_number||'')+(c.category||'')).toLowerCase().includes(q));
+  const el=document.getElementById('c-list');
+  if (!items.length) { el.innerHTML='<div class="empty">No parts in catalog</div>'; return; }
+  el.innerHTML=items.map(c=>`<div class="prow">
+    <div class="pi">
+      <div class="pid">${c.name}</div>
+      <div class="pn">${[c.part_number,c.barcode,c.category].filter(Boolean).join(' · ')}</div>
+      ${c.description?`<div class="paudit">${c.description}</div>`:''}
+    </div>
+    ${currentUser?.role==='admin'?`<button class="ib" style="color:var(--red-text);font-size:16px" onclick="delCat('${c.barcode}')">×</button>`:''}
+  </div>`).join('');
+}
+async function delCat(bc) {
+  if (!confirm('Remove from catalog?')) return;
+  try { await api('DELETE', '/catalog/'+bc); await loadCatalog(); renderCat(); toast('Removed'); } catch(e) { toast(e.message); }
+}
+function exportCatalogCSV() {
+  const rows=[['barcode','part_number','name','category','description']];
+  Object.values(catalog).forEach(c=>rows.push([c.barcode,c.part_number||'',c.name,c.category||'',c.description||'']));
+  dlCSV(fmtCSV(rows),'parts_catalog.csv'); toast('Exported');
+}
+function importCSV(input) {
+  const file=input.files[0]; if(!file)return;
+  const reader=new FileReader();
+  reader.onload=async e=>{
+    const lines=e.target.result.split('\n').filter(l=>l.trim()); let header=null,count=0;
+    for (const line of lines) {
+      const cols=line.match(/("(?:[^"]|"")*"|[^,]*)/g).map(v=>v.replace(/^"|"$/g,'').replace(/""/g,'"'));
+      if(!header){header=cols.map(h=>h.trim().toLowerCase());continue}
+      const idx=f=>header.indexOf(f);
+      const bc=cols[idx('barcode')]?.trim(),nm=cols[idx('name')]?.trim();
+      if(!bc||!nm)continue;
+      try { await api('POST','/catalog',{barcode:bc,name:nm,part_number:cols[idx('part_number')]?.trim()||'',category:cols[idx('category')]?.trim()||'',description:cols[idx('description')]?.trim()||''}); count++; } catch(e){}
+    }
+    await loadCatalog(); renderCat(); toast('Imported '+count+' parts'); input.value='';
+  };
+  reader.readAsText(file);
+}
+
+// ─── JOBS ─────────────────────────────────────────────────────────────────
+async function createJob() {
+  const id = document.getElementById('new-job-id').value.trim();
+  if (!id) { toast('Enter a job ID'); return; }
+  try {
+    await api('POST', '/jobs', { id });
+    document.getElementById('new-job-id').value = '';
+    await loadJobs(); toast('Job '+id+' created');
+  } catch(e) { toast('Error: '+e.message); }
+}
+function renderJobs() {
+  const q=(document.getElementById('j-search')?.value||'').toLowerCase();
+  const el=document.getElementById('j-list');
+  const list=Object.values(jobs).filter(j=>j.id.toLowerCase().includes(q)).sort((a,b)=>b.id>a.id?1:-1);
+  if (!list.length) { el.innerHTML='<div class="empty">No jobs yet. Create one above.</div>'; return; }
+  el.innerHTML=list.map(j=>{
+    const parts=Object.values(j.parts), picked=parts.filter(p=>p.status==='picked').length, over=parts.filter(p=>p.over).length;
+    const status=!parts.length?'empty':parts.every(p=>p.status==='picked')?'picked':parts.some(p=>p.status==='picked')?'partial':'staged';
+    const bc=status==='picked'?'b-picked':status==='partial'?'b-partial':'b-staged';
+    return `<div class="prow" style="cursor:pointer" onclick="showJob('${j.id}')">
+      <div class="pi">
+        <div class="pid">${j.id}<span class="badge ${bc}">${status}</span>${over?`<span class="badge b-over">${over} over</span>`:''}</div>
+        <div class="pn">${parts.length} parts · ${picked}/${parts.length} picked up</div>
+        <div class="paudit">Created by ${j.createdBy||'—'} · ${j.created||''}</div>
+      </div><span style="font-size:18px;color:var(--text3)">›</span>
+    </div>`;
+  }).join('');
+}
+function showJob(id) { document.getElementById('jl-view').style.display='none'; document.getElementById('jd-view').style.display='block'; renderJobDetail(id); }
+function backJobs() { document.getElementById('jl-view').style.display='block'; document.getElementById('jd-view').style.display='none'; renderJobs(); }
+
+async function renderJobDetail(jobId, activeTab) {
+  const job = jobs[jobId]; if (!job) return;
+  const parts = Object.values(job.parts);
+  const staged = parts.filter(p=>p.status==='staged').length;
+  const picked = parts.filter(p=>p.status==='picked').length;
+  const over = parts.filter(p=>p.over).length;
+  const tab = activeTab || 'manifest';
+  const dv = document.getElementById('jd-view');
+
+  dv.innerHTML = `
+    <button class="backbtn" onclick="backJobs()">‹ Jobs</button>
+    <div style="font-size:20px;font-weight:700;margin-bottom:3px">Job ${job.id}</div>
+    <div class="paudit" style="margin-bottom:12px">Created by ${job.createdBy||'—'} · ${job.created||''}</div>
+    ${over ? `<div class="over-flag" style="margin-bottom:12px"><div class="ot">⚠ Overage — ${over} item${over>1?'s':''}</div><div class="om">${parts.filter(p=>p.over).map(p=>p.name+': assigned '+p.assignedQty+', taken '+p.takenQty+' by '+(p.signedOutBy||'—')).join('<br>')}</div></div>` : ''}
+    <div class="stat-row" style="margin-bottom:14px">
+      <div class="stat"><div class="sv">${parts.length}</div><div class="sl">staged</div></div>
+      <div class="stat"><div class="sv">${picked}</div><div class="sl">signed out</div></div>
+      <div class="stat"><div class="sv">${over}</div><div class="sl" style="color:${over?'var(--red-text)':'var(--text2)'}">overages</div></div>
+    </div>
+    <div class="tab-row">
+      <button class="tab-btn ${tab==='manifest'?'active':''}" onclick="renderJobDetail('${jobId}','manifest')">📋 Parts List</button>
+      <button class="tab-btn ${tab==='staged'?'active':''}" onclick="renderJobDetail('${jobId}','staged')">📦 Staged</button>
+      ${currentUser?.role!=='signout'?`<button class="tab-btn ${tab==='add'?'active':''}" onclick="renderJobDetail('${jobId}','add')">＋ Add Parts</button>`:''}
+    </div>
+    <div id="jd-tab-content"></div>`;
+
+  const tabEl = document.getElementById('jd-tab-content');
+  if (tab === 'manifest') await renderManifestTab(jobId, tabEl);
+  else if (tab === 'staged') renderStagedTab(jobId, tabEl);
+  else if (tab === 'add') renderAddTab(jobId, tabEl);
+}
+
+// ── MANIFEST TAB ──────────────────────────────────────────────────────────
+async function renderManifestTab(jobId, el) {
+  el.innerHTML = '<div class="empty">Loading parts list…</div>';
+  try {
+    const manifest = await api('GET', '/jobs/'+jobId+'/manifest');
+
+    if (!manifest.length) {
+      el.innerHTML = `
+        <div class="empty" style="padding:1.5rem 0">No parts assigned to this job yet.</div>
+        ${currentUser?.role!=='signout'?`<button class="btn btn-primary" onclick="renderJobDetail('${jobId}','add')">＋ Add parts to job</button>`:''}`;
+      return;
+    }
+
+    // Summary counts
+    const done = manifest.filter(m=>m.stagedStatus==='picked').length;
+    const staged = manifest.filter(m=>m.stagedStatus==='staged').length;
+    const missing = manifest.filter(m=>m.stagedStatus==='not_staged').length;
+    const over = manifest.filter(m=>m.over).length;
+    const total = manifest.length;
+    const pct = total ? Math.round((done+staged)/total*100) : 0;
+
+    let html = `
+      <div class="manifest-summary">
+        <div class="ms-stat"><div class="msv">${total}</div><div class="msl">expected</div></div>
+        <div class="ms-stat"><div class="msv" style="color:var(--amber-text)">${staged}</div><div class="msl">staged</div></div>
+        <div class="ms-stat"><div class="msv" style="color:var(--green-text)">${done}</div><div class="msl">picked up</div></div>
+        <div class="ms-stat"><div class="msv" style="color:${missing?'var(--red-text)':'var(--text3)'}">${missing}</div><div class="msl">missing</div></div>
+      </div>
+      <div class="manifest-progress"><div class="manifest-progress-bar" style="width:${pct}%"></div></div>
+      <div style="font-size:11px;color:var(--text2);text-align:right;margin-bottom:12px">${pct}% staged or picked up</div>`;
+
+    html += manifest.map(m => {
+      let checkClass, checkIcon, statusClass, statusLabel;
+      if (m.over) { checkClass='mcheck-over'; checkIcon='!'; statusClass='mis-over'; statusLabel='OVER'; }
+      else if (m.stagedStatus==='picked') { checkClass='mcheck-done'; checkIcon='✓'; statusClass='mis-picked'; statusLabel='picked up'; }
+      else if (m.stagedStatus==='staged') { checkClass='mcheck-partial'; checkIcon='↑'; statusClass='mis-staged'; statusLabel='staged'; }
+      else { checkClass='mcheck-missing'; checkIcon='○'; statusClass='mis-missing'; statusLabel='not staged'; }
+
+      const auditLines = [];
+      if (m.stagedBy) auditLines.push(`Staged by <strong>${m.stagedBy}</strong> · ${m.stagedAt}`);
+      if (m.signedOutBy) auditLines.push(`Signed out by <strong>${m.signedOutBy}</strong> · ${m.signedOutAt}`);
+      if (m.over) auditLines.push(`<span style="color:var(--red-text)">Taken ${m.takenQty} of expected ${m.expectedQty}</span>`);
+
+      return `<div class="manifest-item">
+        <div class="manifest-check ${checkClass}">${checkIcon}</div>
+        <div class="mi-info">
+          <div class="mi-name">${m.name}</div>
+          <div class="mi-sub">${m.partId}${m.expectedQty>1?' · qty: '+m.expectedQty:''}${m.notes?' · '+m.notes:''}</div>
+          ${auditLines.length?`<div class="mi-audit">${auditLines.join('<br>')}</div>`:''}
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+          <span class="mi-status ${statusClass}">${statusLabel}</span>
+          ${currentUser?.role!=='signout'?`<button class="ib" style="color:var(--red-text);font-size:14px" onclick="removeFromManifest('${jobId}','${m.partId}')">×</button>`:''}
+        </div>
+      </div>`;
+    }).join('');
+
+    el.innerHTML = html;
+  } catch(e) {
+    el.innerHTML = '<div class="empty">Error loading parts list: '+e.message+'</div>';
+  }
+}
+
+async function removeFromManifest(jobId, partId) {
+  if (!confirm('Remove this part from the job parts list?')) return;
+  try {
+    await api('DELETE', '/jobs/'+jobId+'/manifest/'+encodeURIComponent(partId));
+    renderJobDetail(jobId, 'manifest');
+    toast('Removed from parts list');
+  } catch(e) { toast('Error: '+e.message); }
+}
+
+// ── STAGED TAB (actual scanned parts) ────────────────────────────────────
+function renderStagedTab(jobId, el) {
+  const job = jobs[jobId];
+  const parts = Object.values(job.parts);
+  if (!parts.length) { el.innerHTML='<div class="empty">No parts have been staged yet.</div>'; return; }
+  el.innerHTML = parts.map(p=>`<div class="prow">
+    <div class="pi">
+      <div class="pid">${p.name!==p.id?p.name:p.id}${p.over?'<span class="badge b-over">over</span>':''}</div>
+      <div class="pn">${p.id} · qty: ${p.assignedQty}</div>
+      <div class="paudit">Staged by <strong>${p.stagedBy||'—'}</strong> · ${p.stagedAt||'—'}${p.status==='picked'?`<br>Signed out by <strong>${p.signedOutBy||'—'}</strong> · ${p.signedOutAt||'—'}`:''}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:5px">
+      <span class="ps ${p.status==='picked'?'s-picked':p.over?'s-over':'s-staged'}">${p.status}</span>
+      ${p.status==='staged'&&currentUser?.role!=='signout'?`<button class="ib" style="color:var(--red-text)" onclick="retPartJob('${jobId}','${p.id}')">↩</button>`:''}
+    </div></div>`).join('');
+
+  if (currentUser?.role !== 'signout') {
+    el.innerHTML += `<div class="divider"></div>
+      <button class="btn btn-danger" onclick="retAllJob('${jobId}')">Return all staged → inventory</button>`;
+  }
+}
+
+// ── ADD PARTS TAB ─────────────────────────────────────────────────────────
+function renderAddTab(jobId, el) {
+  el.innerHTML = `
+    <div style="font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.5">
+      Add expected parts to this job's parts list. Stagers will see these as a checklist when staging.
+    </div>
+
+    <div class="fl no-top">Barcode / Part ID</div>
+    <input type="text" id="add-bc" placeholder="Scan or type barcode" style="margin-bottom:6px" oninput="resolveAddPart(this.value)"/>
+    <div id="add-resolve" style="display:none;margin-bottom:6px"></div>
+    <div class="fl">Expected qty</div>
+    <input type="text" id="add-qty" placeholder="1" style="margin-bottom:8px"/>
+    <div class="fl">Notes (optional)</div>
+    <input type="text" id="add-notes" placeholder="e.g. must match spec sheet rev C" style="margin-bottom:10px"/>
+    <button class="btn btn-primary" onclick="addToManifest('${jobId}')" style="margin-bottom:16px">Add to parts list</button>
+
+    <div class="divider" style="margin-top:0"></div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:8px">Import from CSV</div>
+    <div style="font-size:12px;color:var(--text2);margin-bottom:8px">CSV columns: barcode, name, qty, notes</div>
+    <label class="btn btn-sm" style="text-align:center;cursor:pointer;display:block">Import parts list CSV
+      <input type="file" accept=".csv" style="display:none" onchange="importManifestCSV(this,'${jobId}')">
+    </label>`;
+}
+
+function resolveAddPart(val) {
+  const el = document.getElementById('add-resolve');
+  if (!el) return;
+  const p = lookup(val.trim());
+  if (!val.trim()) { el.style.display='none'; return; }
+  el.style.display = 'block';
+  el.innerHTML = p
+    ? `<div class="bbanner bb-ok"><div class="bn">${p.name}${p.part_number?' · '+p.part_number:''}</div></div>`
+    : `<div class="bbanner bb-warn"><div class="bm">Unknown barcode — will be added as-is. Add to catalog for full details.</div></div>`;
+}
+
+async function addToManifest(jobId) {
+  const bc = document.getElementById('add-bc')?.value.trim();
+  if (!bc) { toast('Enter a barcode'); return; }
+  const qty = parseInt(document.getElementById('add-qty')?.value.trim()) || 1;
+  const notes = document.getElementById('add-notes')?.value.trim() || '';
+  const cat = lookup(bc);
+  const name = cat ? cat.name : bc;
+  try {
+    await api('POST', '/jobs/'+jobId+'/manifest', { partId:bc, name, expectedQty:qty, notes });
+    renderJobDetail(jobId, 'manifest');
+    toast('Added to parts list: '+name);
+  } catch(e) { toast('Error: '+e.message); }
+}
+
+async function importManifestCSV(input, jobId) {
+  const file = input.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = async e => {
+    const lines = e.target.result.split('\n').filter(l=>l.trim());
+    let header = null, count = 0;
+    for (const line of lines) {
+      const cols = line.match(/("(?:[^"]|"")*"|[^,]*)/g).map(v=>v.replace(/^"|"$/g,'').replace(/""/g,'"'));
+      if (!header) { header = cols.map(h=>h.trim().toLowerCase()); continue; }
+      const idx = f => header.indexOf(f);
+      const bc = cols[idx('barcode')]?.trim();
+      if (!bc) continue;
+      const name = cols[idx('name')]?.trim() || lookup(bc)?.name || bc;
+      const qty = parseInt(cols[idx('qty')]?.trim()) || 1;
+      const notes = cols[idx('notes')]?.trim() || '';
+      try { await api('POST', '/jobs/'+jobId+'/manifest', { partId:bc, name, expectedQty:qty, notes }); count++; } catch(e){}
+    }
+    renderJobDetail(jobId, 'manifest');
+    toast('Imported '+count+' parts to list');
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
+
+async function retPartJob(jobId, partId) {
+  try { await api('POST','/jobs/'+jobId+'/parts/'+partId+'/return'); const j=await api('GET','/jobs/'+jobId); jobs[jobId]=j; renderJobDetail(jobId,'staged'); toast('Returned to inventory'); } catch(e){toast(e.message);}
+}
+async function retAllJob(jobId) {
+  const job=jobs[jobId]; if(!job)return;
+  const staged=Object.values(job.parts).filter(p=>p.status==='staged');
+  for(const p of staged){try{await api('POST','/jobs/'+jobId+'/parts/'+p.id+'/return');}catch(e){}}
+  const j=await api('GET','/jobs/'+jobId); jobs[jobId]=j; renderJobDetail(jobId,'staged'); toast('Returned '+staged.length+' part(s)');
+}
+function resolveJdPart(val) {
+  const el=document.getElementById('jd-resolve'); const p=lookup(val.trim());
+  if (!val.trim()) { el.style.display='none'; return; }
+  el.style.display='block';
+  el.innerHTML = p ? `<div class="bbanner bb-ok"><div class="bn">${p.name}</div></div>` : `<div class="bbanner bb-warn"><div class="bm">Unknown barcode</div></div>`;
+}
+async function addPartToJob(jobId) {
+  const bc=document.getElementById('jd-abc').value.trim();
+  if (!bc) { toast('Enter barcode'); return; }
+  const qty=parseInt(document.getElementById('jd-aqty')?.value.trim())||1;
+  const cat=lookup(bc); const nm=cat?cat.name:bc;
+  try {
+    await api('POST','/jobs/'+jobId+'/parts',{partId:bc,name:nm,assignedQty:qty});
+    const j=await api('GET','/jobs/'+jobId); jobs[jobId]=j;
+    renderJobDetail(jobId,'staged'); toast('Added '+nm);
+  } catch(e) { toast('Error: '+e.message); }
+}
+
+// ─── REPORTS ──────────────────────────────────────────────────────────────
+async function renderReport() {
+  const filterJob=(document.getElementById('rpt-job')?.value||'').trim();
+  const el=document.getElementById('report-body');
+  el.innerHTML='<div class="empty">Loading…</div>';
+  try {
+    const data = await api('GET', '/report'+(filterJob?'?job='+encodeURIComponent(filterJob):''));
+    const {staged,signedOut,overages} = data;
+    let html=`<div class="summary-cards">
+      <div class="sum-card blue"><div class="sv">${data.jobs}</div><div class="sl">Active jobs</div></div>
+      <div class="sum-card"><div class="sv">${staged.length+signedOut.length+overages.length}</div><div class="sl">Total parts</div></div>
+      <div class="sum-card amber"><div class="sv">${staged.length}</div><div class="sl">Currently staged</div></div>
+      <div class="sum-card green"><div class="sv">${signedOut.length}</div><div class="sl">Signed out</div></div>
+    </div>`;
+    if (overages.length) html+=`<div class="over-flag" style="margin-bottom:14px"><div class="ot">⚠ ${overages.length} overage item${overages.length>1?'s':''}</div></div>`;
+    // Staged
+    html+=`<div class="report-section"><div class="report-section-hdr"><h3>Staged — waiting for pickup (${staged.length})</h3></div><div class="report-body">`;
+    if (!staged.length) html+='<div style="padding:12px 0;font-size:13px;color:var(--text2)">None currently staged.</div>';
+    else html+=staged.map(p=>`<div class="report-row"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${p.name}</div><div style="font-size:11px;color:var(--text2)">Job ${p.job} · ${p.id} · qty ${p.assignedQty}</div><div class="paudit">Staged by ${p.stagedBy} · ${p.stagedAt}</div></div><span class="ps s-staged">staged</span></div>`).join('');
+    html+='</div></div>';
+    // Signed out
+    html+=`<div class="report-section"><div class="report-section-hdr"><h3>Signed out — picked up (${signedOut.length})</h3></div><div class="report-body">`;
+    if (!signedOut.length) html+='<div style="padding:12px 0;font-size:13px;color:var(--text2)">None signed out yet.</div>';
+    else html+=signedOut.map(p=>`<div class="report-row"><div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:500">${p.name}</div><div style="font-size:11px;color:var(--text2)">Job ${p.job} · qty ${p.takenQty||1}</div><div class="paudit">Staged by ${p.stagedBy}<br>Signed out by ${p.signedOutBy} · ${p.signedOutAt}</div></div><span class="ps s-picked">picked</span></div>`).join('');
+    html+='</div></div>';
+    el.innerHTML=html;
+  } catch(e) { el.innerHTML='<div class="empty">Error loading report: '+e.message+'</div>'; }
+}
+function fmtCSV(rows){return rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n')}
+function dlCSV(csv,filename){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'}));a.download=filename;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000)}
+async function exportReportCSV(type) {
+  try {
+    const data=await api('GET','/report');
+    const now=new Date().toLocaleDateString('en-US');
+    let rows,filename;
+    if(type==='staged'){
+      rows=[['Job ID','Part ID','Part Name','Part Number','Category','Assigned Qty','Staged By','Staged At']];
+      data.staged.forEach(p=>{ const c=catalog[p.id]||{}; rows.push([p.job,p.id,p.name,c.part_number||'',c.category||'',p.assignedQty,p.stagedBy,p.stagedAt]); });
+      filename='staged_parts_'+now.replace(/\//g,'-')+'.csv';
+    } else if(type==='signedout'){
+      rows=[['Job ID','Part ID','Part Name','Assigned Qty','Taken Qty','Overage','Staged By','Staged At','Signed Out By','Signed Out At']];
+      [...data.signedOut,...data.overages].forEach(p=>rows.push([p.job,p.id,p.name,p.assignedQty,p.takenQty||1,p.over?'YES':'',p.stagedBy,p.stagedAt,p.signedOutBy||'',p.signedOutAt||'']));
+      filename='signedout_parts_'+now.replace(/\//g,'-')+'.csv';
+    } else {
+      rows=[['Report Date','Job ID','Part ID','Part Name','Part Number','Category','Status','Assigned Qty','Taken Qty','Overage','Staged By','Staged At','Signed Out By','Signed Out At']];
+      [...data.staged,...data.signedOut,...data.overages].forEach(p=>{ const c=catalog[p.id]||{}; rows.push([now,p.job,p.id,p.name,c.part_number||'',c.category||'',p.status,p.assignedQty,p.takenQty||0,p.over?'YES':'NO',p.stagedBy||'',p.stagedAt||'',p.signedOutBy||'',p.signedOutAt||'']); });
+      filename='warehouse_full_report_'+now.replace(/\//g,'-')+'.csv';
+    }
+    dlCSV(fmtCSV(rows),filename); toast('Exported');
+  } catch(e){toast('Error: '+e.message);}
+}
+
+// ─── AUDIT LOG ────────────────────────────────────────────────────────────
+async function loadLog() {
+  try { logData=await api('GET','/log'); renderLog(); } catch(e){document.getElementById('log-list').innerHTML='<div class="empty">No access</div>';}
+}
+function renderLog() {
+  const q=(document.getElementById('log-filter')?.value||'').toLowerCase();
+  const el=document.getElementById('log-list');
+  const items=logData.filter(l=>!q||(l.jobId+l.partName+l.user+l.partId).toLowerCase().includes(q));
+  if(!items.length){el.innerHTML='<div class="empty">No activity</div>';return}
+  el.innerHTML=items.map(l=>{
+    const colors={in:'var(--green-text)',out:'var(--blue-text)',over:'var(--red-text)',staged:'var(--amber-text)',return:'var(--text2)'};
+    const labels={in:'staged',out:'signed out',over:'OVERAGE',staged:'re-staged',return:'returned'};
+    const bgs={in:'var(--green-bg)',out:'var(--blue-bg)',over:'var(--red-bg)',staged:'var(--amber-bg)',return:'var(--bg3)'};
+    return `<div class="prow"><div class="pi">
+      <div class="pid">${l.user} <span style="font-size:10px;padding:2px 7px;border-radius:99px;background:${bgs[l.type]||'var(--bg3)'};color:${colors[l.type]||'var(--text2)'};font-weight:600">${labels[l.type]||l.type}</span></div>
+      <div class="pn">${l.partName} · job ${l.jobId}${l.extra?' · '+l.extra:''}</div>
+      <div class="paudit">${l.ts}</div>
+    </div></div>`;
+  }).join('');
+}
+function exportLogCSV(){const rows=[['Timestamp','User','Action','Part Name','Part ID','Job ID','Notes']];logData.forEach(l=>rows.push([l.ts,l.user,l.type,l.partName,l.partId,l.jobId,l.extra||'']));dlCSV(fmtCSV(rows),'warehouse_audit_log.csv');toast('Exported');}
+
+// ─── ADMIN ────────────────────────────────────────────────────────────────
+async function loadUsers() {
+  if (currentUser?.role !== 'admin') { document.getElementById('admin-lock').style.display='block'; document.getElementById('admin-wrap').style.display='none'; return; }
+  try {
+    const users=await api('GET','/users'); renderUsers(users);
+  } catch(e){toast('Error: '+e.message);}
+}
+function renderUsers(users) {
+  const el=document.getElementById('users-list');
+  el.innerHTML=users.map(u=>`<div class="user-card">
+    <div class="uc-name">${u.name} ${u.id===currentUser.id?'<span style="font-size:11px;color:var(--text3)">(you)</span>':''}
+      <span class="role-badge role-${u.role}">${u.role}</span>
+      ${!u.active?'<span class="badge" style="background:var(--red-bg);color:var(--red-text)">disabled</span>':''}
+    </div>
+    <div class="uc-meta">@${u.username} · Created ${u.createdAt||'—'}</div>
+    <div class="uc-actions">
+      <button class="btn btn-sm" onclick="openEditUser('${u.id}','${u.name}','${u.role}',${u.active})">Edit</button>
+      ${u.id!==currentUser.id?`<button class="btn btn-sm btn-danger" onclick="deleteUser('${u.id}','${u.name}')">Delete</button>`:''}
+    </div>
+  </div>`).join('');
+}
+async function createUser() {
+  const name=document.getElementById('a-name').value.trim();
+  const username=document.getElementById('a-user').value.trim();
+  const password=document.getElementById('a-pass').value;
+  const role=document.getElementById('a-role').value;
+  if(!name||!username||!password){toast('All fields required');return}
+  if(password.length<6){toast('Password must be at least 6 characters');return}
+  try {
+    await api('POST','/users',{name,username,password,role});
+    ['a-name','a-user','a-pass'].forEach(id=>document.getElementById(id).value='');
+    toast('User created: '+name); loadUsers();
+  } catch(e){toast('Error: '+e.message);}
+}
+function openEditUser(id,name,role,active) {
+  document.getElementById('eu-id').value=id;
+  document.getElementById('eu-name').value=name;
+  document.getElementById('eu-role').value=role;
+  document.getElementById('eu-active').value=active?'1':'0';
+  document.getElementById('eu-pass').value='';
+  document.getElementById('edit-user-modal').style.display='flex';
+}
+function closeEditUser(){document.getElementById('edit-user-modal').style.display='none';}
+async function saveEditUser() {
+  const id=document.getElementById('eu-id').value;
+  const body={name:document.getElementById('eu-name').value.trim(),role:document.getElementById('eu-role').value,active:document.getElementById('eu-active').value==='1'};
+  const pass=document.getElementById('eu-pass').value;
+  if(pass){if(pass.length<6){toast('Password min 6 chars');return}body.password=pass;}
+  try { await api('PUT','/users/'+id,body); closeEditUser(); loadUsers(); toast('User updated'); } catch(e){toast('Error: '+e.message);}
+}
+async function deleteUser(id,name) {
+  if(!confirm('Delete user '+name+'? This cannot be undone.'))return;
+  try { await api('DELETE','/users/'+id); loadUsers(); toast('User deleted'); } catch(e){toast('Error: '+e.message);}
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────
+renderRecent();
+init();
+</script>
+
+<script>
+// Inline PWA manifest
+const m={name:'Warehouse Parts Tracker',short_name:'Warehouse',start_url:'/',display:'standalone',background_color:'#ffffff',theme_color:'#ffffff',icons:[{src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='20' fill='%231d1d1f'/><text y='.9em' font-size='75' x='12'>📦</text></svg>",sizes:'192x192',type:'image/svg+xml'}]};
+const mb=new Blob([JSON.stringify(m)],{type:'application/json'});
+const ml=document.createElement('link');ml.rel='manifest';ml.href=URL.createObjectURL(mb);document.head.appendChild(ml);
+</script>
+</body>
+</html>
