@@ -330,7 +330,20 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
       <div class="pl-sub">Only admins and stagers can edit the catalog</div>
     </div>
     <div id="catalog-edit-wrap">
-      <div class="fl no-top">Barcode</div><input type="text" id="c-bc" placeholder="Scan or type" style="margin-bottom:8px"/>
+      <div class="fl no-top">Barcode</div>
+      <div style="display:flex;gap:8px;margin-bottom:8px">
+        <input type="text" id="c-bc" placeholder="Scan or type barcode" style="flex:1;margin-bottom:0" oninput="resolveCatBarcode(this.value)"/>
+        <button class="btn btn-sm" id="cat-cam-btn" onclick="toggleCatalogCamera()" style="flex-shrink:0;white-space:nowrap">&#128247; Scan</button>
+      </div>
+      <div id="cat-cam-wrap" style="display:none;margin-bottom:10px">
+        <div class="camera-wrap" style="margin-bottom:8px">
+          <div id="cat-cam-preview"></div>
+          <div class="camera-overlay"><div class="scan-reticle"><div class="scan-line"></div></div></div>
+          <div class="camera-status" id="cat-cam-status">Align barcode in frame</div>
+          <div class="cam-detected" id="cat-cam-detected" style="display:none"><span id="cat-cam-detected-text"></span></div>
+        </div>
+      </div>
+      <div id="cat-bc-resolved" style="display:none;margin-bottom:8px"></div>
       <div class="fl">Part number</div><input type="text" id="c-pn" placeholder="e.g. ELB-075-CU" style="margin-bottom:8px"/>
       <div class="fl">Part name *</div><input type="text" id="c-nm" placeholder="e.g. 3/4 in copper elbow" style="margin-bottom:8px"/>
       <div class="fl">Category</div><input type="text" id="c-cat" placeholder="e.g. fittings" style="margin-bottom:8px"/>
@@ -487,6 +500,7 @@ let cart = { mode: 'stage', items: {} };
 let jsCart = {};
 let cameraActive = false;
 let jsCameraActive = false;
+let catCameraActive = false;
 let torchOn = false;
 let torchTrack = null;
 let scanCooldown = false;
@@ -590,7 +604,7 @@ function showUserMenu() {
 
 // ─── NAV ─────────────────────────────────────────────────────────────────
 function show(n) {
-  stopCamera(); stopJobCamera();
+  stopCamera(); stopJobCamera(); stopCatalogCamera();
   document.querySelectorAll('.sc').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav button').forEach((b,i) => {
     b.classList.toggle('active', ['scan','jobscan','catalog','jobs','report','log','admin'][i] === n);
@@ -737,7 +751,71 @@ function stopJobCamera() {
   document.getElementById('jscam-btn').textContent = '📷 Camera';
 }
 
-// ─── SCAN MODAL ───────────────────────────────────────────────────────────
+// --- CATALOG CAMERA ---
+let catCameraActive = false;
+function toggleCatalogCamera() { catCameraActive ? stopCatalogCamera() : startCatalogCamera(); }
+function startCatalogCamera() {
+  document.getElementById('cat-cam-wrap').style.display = 'block';
+  document.getElementById('cat-cam-btn').textContent = '⏹ Stop';
+  document.getElementById('cat-cam-status').textContent = 'Starting...';
+  Quagga.init({
+    inputStream: { type:'LiveStream', target:document.getElementById('cat-cam-preview'), constraints:{facingMode:'environment'} },
+    decoder: { readers:['code_128_reader','ean_reader','ean_8_reader','code_39_reader','upc_reader','upc_e_reader','codabar_reader','i2of5_reader'] },
+    locate:true, numOfWorkers:2, frequency:10
+  }, err => {
+    if (err) { toast('Camera not available'); stopCatalogCamera(); return; }
+    Quagga.start(); catCameraActive = true;
+    document.getElementById('cat-cam-status').textContent = 'Align barcode in frame';
+  });
+  Quagga.offDetected();
+  Quagga.onDetected(result => {
+    const code = result.codeResult.code;
+    if (!code || scanCooldown) return;
+    scanCooldown = true; setTimeout(()=>scanCooldown=false, 1500);
+    playBeep();
+    if (navigator.vibrate) navigator.vibrate([60,40,60]);
+    // Show detected flash
+    const det = document.getElementById('cat-cam-detected');
+    document.getElementById('cat-cam-detected-text').textContent = '✓ ' + code;
+    det.style.display = 'block'; setTimeout(()=>det.style.display='none', 1000);
+    // Fill barcode field
+    document.getElementById('c-bc').value = code;
+    resolveCatBarcode(code);
+    stopCatalogCamera();
+    // Focus part name if barcode unknown
+    const existing = lookup(code);
+    if (existing) {
+      // Pre-fill fields if already in catalog
+      document.getElementById('c-pn').value = existing.part_number || '';
+      document.getElementById('c-nm').value = existing.name || '';
+      document.getElementById('c-cat').value = existing.category || '';
+      document.getElementById('c-desc').value = existing.description || '';
+      toast('Already in catalog -- edit and save to update');
+    } else {
+      setTimeout(()=>document.getElementById('c-nm').focus(), 100);
+      toast('New barcode -- fill in the details below');
+    }
+  });
+}
+function stopCatalogCamera() {
+  if (!catCameraActive) return;
+  try { Quagga.stop(); } catch(e){} catCameraActive = false;
+  document.getElementById('cat-cam-wrap').style.display = 'none';
+  document.getElementById('cat-cam-btn').textContent = '📷 Scan';
+}
+function resolveCatBarcode(val) {
+  const el = document.getElementById('cat-bc-resolved');
+  if (!val || !val.trim()) { el.style.display='none'; return; }
+  const p = lookup(val.trim());
+  el.style.display = 'block';
+  if (p) {
+    el.innerHTML = '<div class="bbanner bb-ok"><div class="bn">' + p.name + (p.part_number?' · '+p.part_number:'') + '</div><div class="bm">Already in catalog -- saving will update it</div></div>';
+  } else {
+    el.innerHTML = '<div class="bbanner bb-warn"><div class="bm">New barcode -- fill in details and save</div></div>';
+  }
+}
+
+// --- SCAN MODAL ───────────────────────────────────────────────────────────
 function showScanModal(code) {
   const item = cart.items[code];
   const nm = item?.name || lookup(code)?.name || code;
