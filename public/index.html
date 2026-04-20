@@ -33,7 +33,7 @@
 }}
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
 html,body{height:100%;font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Segoe UI',sans-serif;background:var(--bg);color:var(--text)}
-body{display:flex;flex-direction:column;overflow:hidden}
+body{display:flex;flex-direction:column;min-height:100vh}
 
 .hdr{display:flex;align-items:center;gap:10px;padding:max(12px,env(safe-area-inset-top)) 16px 8px;border-bottom:.5px solid var(--border);background:var(--bg);flex-shrink:0}
 .hdr-text{flex:1}.hdr h1{font-size:17px;font-weight:600}.hdr p{font-size:11px;color:var(--text2);margin-top:1px}
@@ -216,7 +216,7 @@ select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/
 <body>
 
 <!-- LOGIN (shown before auth) -->
-<div id="login-screen" style="display:none">
+<div id="login-screen">
   <div class="login-wrap">
     <div class="login-card">
       <div class="login-logo">🏭</div>
@@ -574,6 +574,7 @@ async function doLogin() {
 function showErr(el, msg) { el.textContent = msg; el.style.display = 'block'; }
 
 function startApp() {
+  document.getElementById('login-screen').style.display = 'none';
   const app = document.getElementById('main-app');
   app.style.display = 'flex';
   document.getElementById('user-pill').textContent = currentUser.name;
@@ -759,7 +760,6 @@ function stopJobCamera() {
 }
 
 // --- CATALOG CAMERA ---
-let catCameraActive = false;
 function toggleCatalogCamera() { catCameraActive ? stopCatalogCamera() : startCatalogCamera(); }
 function startCatalogCamera() {
   document.getElementById('cat-cam-wrap').style.display = 'block';
