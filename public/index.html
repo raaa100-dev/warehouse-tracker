@@ -531,17 +531,24 @@ function toast(m, d=2500) {
 
 // ─── LOGIN ────────────────────────────────────────────────────────────────
 async function init() {
-  // Check server first
-  document.getElementById('server-status').textContent = 'Connecting to server…';
+  // Always show login screen immediately so it never appears blank
+  document.getElementById('login-screen').style.display = 'block';
+  document.getElementById('server-status').textContent = 'Connecting to server...';
   if (token) {
     try {
       currentUser = await api('GET', '/me');
+      document.getElementById('login-screen').style.display = 'none';
       startApp();
       return;
-    } catch(e) { token = null; localStorage.removeItem('wh_token'); }
+    } catch(e) {
+      // Token invalid or expired -- clear it and stay on login screen
+      token = null;
+      localStorage.removeItem('wh_token');
+      document.getElementById('server-status').textContent = 'Session expired -- please sign in again';
+    }
+  } else {
+    document.getElementById('server-status').textContent = '';
   }
-  document.getElementById('login-screen').style.display = 'block';
-  document.getElementById('server-status').textContent = '';
 }
 
 async function doLogin() {
